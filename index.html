@@ -154,17 +154,6 @@
     color: var(--text-active);
   }
 
-  @media (max-width: 768px) {
-    #title-left { font-size: 9px; letter-spacing: 2px; left: 14px; }
-    #title-right { font-size: 8px; right: 14px; }
-    #theme-toggle { top: 40px; left: auto; right: 14px; transform: none; padding: 4px 10px; font-size: 9px; }
-    #status-line { font-size: 9px; letter-spacing: 1.5px; gap: 10px; margin-top: 16px; }
-    #mode-selector button { padding: 5px 10px; font-size: 10px; }
-    #choreo-buttons button { padding: 4px 8px; font-size: 9px; }
-    #progress-labels { font-size: 7px; }
-    #info-bar { gap: 12px; padding: 0 14px; }
-  }
-
   #theme-toggle {
     position: absolute; top: 18px; left: 50%;
     transform: translateX(-50%);
@@ -172,10 +161,22 @@
     color: var(--text-dim); padding: 5px 14px; border-radius: 6px;
     font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
     cursor: pointer; font-family: inherit; transition: all 0.3s;
+    white-space: nowrap;
   }
   #theme-toggle:hover {
     background: var(--ui-bg-active);
     color: var(--text-active);
+  }
+
+  @media (max-width: 768px) {
+    #title-left { font-size: 9px; letter-spacing: 2px; left: 14px; }
+    #title-right { font-size: 8px; right: 14px; }
+    #theme-toggle { padding: 4px 8px; font-size: 9px; letter-spacing: 1px; }
+    #status-line { font-size: 9px; letter-spacing: 1.5px; gap: 10px; margin-top: 16px; }
+    #mode-selector button { padding: 5px 10px; font-size: 10px; }
+    #choreo-buttons button { padding: 4px 8px; font-size: 9px; }
+    #progress-labels { font-size: 7px; }
+    #info-bar { gap: 12px; padding: 0 14px; }
   }
 </style>
 </head>
@@ -539,7 +540,8 @@ function updateModeUI() {
 function resize() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const maxW = (vw - 120) / 8.8;
+  const isMobile = vw <= 768;
+  const maxW = isMobile ? (vw - 28) / 9.3 : (vw - 120) / 8.8;
   const maxH = (vh - 200) / 3.3;
   const newSize = Math.max(28, Math.min(80, Math.floor(Math.min(maxW, maxH))));
   if (newSize !== clockSize) {
