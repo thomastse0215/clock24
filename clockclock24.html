@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClockClock 24 — Digital Edition</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #080808;
+    --text: #888;
+    --text-active: #ccc;
+    --text-dim: #555;
+    --hand: #e8e8e8;
+    --dot: #e8e8e8;
+    --ring: rgba(255,255,255,0.07);
+    --ui-bg: rgba(255,255,255,0.04);
+    --ui-bg-active: rgba(255,255,255,0.1);
+    --ui-border: rgba(255,255,255,0.06);
+    --ui-bg-hover: rgba(255,255,255,0.12);
+    --phase-bg: rgba(255,255,255,0.08);
+    --cursor-color: #888;
+  }
+
+  body.light {
+    --bg: #f0eeeb;
+    --text: #888;
+    --text-active: #333;
+    --text-dim: #aaa;
+    --hand: #1a1a1a;
+    --dot: #1a1a1a;
+    --ring: rgba(0,0,0,0.06);
+    --ui-bg: rgba(0,0,0,0.04);
+    --ui-bg-active: rgba(0,0,0,0.08);
+    --ui-border: rgba(0,0,0,0.08);
+    --ui-bg-hover: rgba(0,0,0,0.1);
+    --phase-bg: rgba(0,0,0,0.06);
+    --cursor-color: #666;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    overflow: hidden;
+    transition: background 0.6s;
+  }
+
+  #clock-grid {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .digit-group {
+    display: grid;
+    grid-template-columns: repeat(2, var(--cs));
+    grid-template-rows: repeat(3, var(--cs));
+  }
+
+  .mini-clock {
+    display: block;
+  }
+
+  #title-left {
+    position: absolute; top: 20px; left: 24px;
+    font-size: 10px; letter-spacing: 4px;
+    text-transform: uppercase; opacity: 0.2;
+  }
+  #title-right {
+    position: absolute; top: 20px; right: 24px;
+    font-size: 9px; letter-spacing: 2px;
+    text-transform: uppercase; opacity: 0.15;
+  }
+
+  #info-bar {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 16px;
+    width: 100%; max-width: 700px; padding: 0 20px;
+  }
+
+  #status-line {
+    font-size: 11px; letter-spacing: 3px;
+    text-transform: uppercase; opacity: 0.5;
+    display: flex; gap: 24px; align-items: center;
+    flex-wrap: wrap; justify-content: center;
+  }
+  #status-line .dot { opacity: 0.3; }
+
+  #mode-selector {
+    display: flex; gap: 2px;
+    background: var(--ui-bg);
+    border-radius: 8px; padding: 2px;
+  }
+  #mode-selector button {
+    background: transparent; border: none;
+    color: var(--text-dim); padding: 6px 16px; border-radius: 6px;
+    font-size: 11px; letter-spacing: 1.5px;
+    text-transform: uppercase; cursor: pointer;
+    transition: all 0.3s;
+    font-family: inherit;
+  }
+  #mode-selector button.active {
+    background: var(--ui-bg-active);
+    color: var(--text-active);
+  }
+
+  #progress-wrap {
+    width: 100%; max-width: 400px; margin-top: 2px;
+  }
+  #progress-bar {
+    position: relative; height: 3px;
+    background: var(--ui-bg);
+    border-radius: 2px; overflow: hidden;
+  }
+  #progress-cursor {
+    position: absolute; top: 0; width: 2px; height: 100%;
+    background: var(--cursor-color); border-radius: 1px;
+  }
+  .progress-phase {
+    position: absolute; top: 0; height: 100%;
+    background: var(--phase-bg);
+  }
+  #progress-labels {
+    display: flex; justify-content: space-between;
+    font-size: 8px; opacity: 0.25; margin-top: 4px; letter-spacing: 1px;
+  }
+
+  #choreo-buttons {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    justify-content: center; margin-top: 4px;
+  }
+  #choreo-buttons button {
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-border);
+    color: var(--text-dim); padding: 5px 10px; border-radius: 6px;
+    font-size: 10px; cursor: pointer; transition: all 0.3s;
+    font-family: inherit; letter-spacing: 0.5px;
+  }
+  #choreo-buttons button.active {
+    background: var(--ui-bg-hover);
+    color: var(--text-active);
+  }
+
+  #theme-toggle {
+    position: absolute; top: 18px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--ui-bg); border: 1px solid var(--ui-border);
+    color: var(--text-dim); padding: 5px 14px; border-radius: 6px;
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    cursor: pointer; font-family: inherit; transition: all 0.3s;
+  }
+  #theme-toggle:hover {
+    background: var(--ui-bg-active);
+    color: var(--text-active);
+  }
+</style>
+</head>
+<body>
+
+<div id="title-left">ClockClock 24</div>
+<button id="theme-toggle">Light</button>
+<div id="title-right">Digital Edition</div>
+
+<div id="clock-grid"></div>
+
+<div id="info-bar">
+  <div id="status-line">
+    <span id="time-str"></span>
+    <span class="dot">•</span>
+    <span id="phase-label"></span>
+    <span class="dot">•</span>
+    <span id="mode-label"></span>
+  </div>
+
+  <div id="mode-selector">
+    <button data-mode="active" class="active">Active</button>
+    <button data-mode="medium">Medium</button>
+    <button data-mode="quiet">Quiet</button>
+  </div>
+
+  <div id="progress-wrap">
+    <div id="progress-bar">
+      <div class="progress-phase" style="left:0;width:33.33%;border-radius:2px 0 0 2px"></div>
+      <div class="progress-phase" style="left:83.33%;width:16.67%;border-radius:0 2px 2px 0"></div>
+      <div id="progress-cursor"></div>
+    </div>
+    <div id="progress-labels">
+      <span>:00 TIME</span><span>:20 BLEND</span><span>:30 CHOREO</span><span>:50 BLEND</span><span>:00</span>
+    </div>
+  </div>
+
+  <div id="choreo-buttons"></div>
+</div>
+
+<script>
+// ─── Digit Patterns ──────────────────────────────────────────
+const B = 225;
+const DIGITS = {
+  0: [[90,180],[180,270],[0,180],[0,180],[0,90],[0,270]],
+  1: [[B,B],[180,180],[B,B],[0,180],[B,B],[0,0]],
+  2: [[90,90],[180,270],[90,180],[0,270],[0,90],[270,270]],
+  3: [[90,90],[180,270],[90,90],[0,270],[90,90],[0,270]],
+  4: [[180,180],[180,180],[0,90],[0,180],[B,B],[0,0]],
+  5: [[90,180],[270,270],[0,90],[180,270],[90,90],[0,270]],
+  6: [[90,180],[270,270],[0,180],[180,270],[0,90],[0,270]],
+  7: [[90,90],[180,270],[B,B],[0,180],[B,B],[0,0]],
+  8: [[90,180],[180,270],[0,90],[0,270],[0,90],[0,270]],
+  9: [[90,180],[180,270],[0,90],[0,180],[90,90],[0,270]],
+};
+
+// ─── Utilities ───────────────────────────────────────────────
+const norm = a => ((a % 360) + 360) % 360;
+
+function lerpAngle(from, to, t) {
+  from = norm(from); to = norm(to);
+  let d = to - from;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  return norm(from + d * t);
+}
+
+function clockPos(i) {
+  const digit = Math.floor(i / 6);
+  const pos = i % 6;
+  const row = Math.floor(pos / 2);
+  const col = pos % 2;
+  const gapOffset = digit >= 2 ? 1 : 0;
+  return {
+    x: (digit * 2.3 + col + gapOffset * 0.7) / 9.6,
+    y: row / 2
+  };
+}
+
+function digitsToAngles(digits) {
+  const a = [];
+  for (let di = 0; di < 4; di++) {
+    const pat = DIGITS[digits[di]];
+    for (let c = 0; c < 6; c++) {
+      a.push(pat[c][0], pat[c][1]);
+    }
+  }
+  return a;
+}
+
+function timeAngles() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  return digitsToAngles([Math.floor(h/10), h%10, Math.floor(m/10), m%10]);
+}
+
+function upcomingTimeAngles() {
+  const now = new Date();
+  const sec = now.getSeconds() + now.getMilliseconds() / 1000;
+  const upcoming = new Date(now.getTime() + (60 - sec) * 1000);
+  const h = upcoming.getHours(), m = upcoming.getMinutes();
+  return digitsToAngles([Math.floor(h/10), h%10, Math.floor(m/10), m%10]);
+}
+
+// ─── 10 Choreographies ──────────────────────────────────────
+const CHOREO_NAMES = [
+  "Synchronized Spin", "Ocean Wave", "Starburst", "Mirror Dance",
+  "Cascade", "Golden Scatter", "Pinwheels", "Metronome", "Vortex", "Breathing"
+];
+
+const choreographies = [
+  // Target: ~9°/s max hand speed (matching transition: ~90° over 10s)
+  // With CHOREO_DUR_MS=50000, t goes 0→1 over 50s
+  // Linear t*N: speed = N/50 °/s → N=450 for 9°/s
+  // Sinusoidal A*sin(t*π*F): max speed = A*π*F/50 → A*F≈143 for 9°/s
+
+  // 1 — Synchronized spin
+  t => Array.from({length:48}, (_, i) => norm(t * 450 + (i%2) * 180)),
+
+  // 2 — Ocean wave
+  t => Array.from({length:48}, (_, i) => {
+    const p = clockPos(Math.floor(i/2));
+    return norm(
+      Math.sin(p.x*Math.PI*2 - t*Math.PI*1.6)*90 +
+      Math.cos(p.y*Math.PI - t*Math.PI*1.2)*50 +
+      (i%2)*90
+    );
+  }),
+
+  // 3 — Starburst
+  t => Array.from({length:48}, (_, i) => {
+    const p = clockPos(Math.floor(i/2));
+    return norm(Math.atan2(p.y-0.5, p.x-0.5)*180/Math.PI + 90 + t*450 + (i%2)*180);
+  }),
+
+  // 4 — Mirror dance
+  t => Array.from({length:48}, (_, i) => {
+    const p = clockPos(Math.floor(i/2));
+    const flip = p.x > 0.5 ? -1 : 1;
+    return norm(
+      Math.sin(t*Math.PI*1.6)*90*flip +
+      p.y*60*Math.cos(t*Math.PI*1.2) +
+      (i%2)*135
+    );
+  }),
+
+  // 5 — Cascade
+  t => Array.from({length:48}, (_, i) => {
+    const p = clockPos(Math.floor(i/2));
+    const local = ((t*0.8 - p.x*0.4 - p.y*0.15) % 1 + 1) % 1;
+    return norm(local*450 + (i%2)*180);
+  }),
+
+  // 6 — Golden scatter
+  t => Array.from({length:48}, (_, i) => {
+    return norm(
+      (i*137.508)%360 +
+      Math.sin(i*0.7 + t*Math.PI*1.4)*50 +
+      Math.cos(i*1.3 + t*Math.PI*1.0)*35 +
+      t*200
+    );
+  }),
+
+  // 7 — Pinwheels
+  t => Array.from({length:48}, (_, i) => {
+    const ci = Math.floor(i/2);
+    const dir = (ci%2===0) ? 1 : -1;
+    return norm(t*450*dir + (i%2)*120 + ci*30);
+  }),
+
+  // 8 — Metronome
+  t => Array.from({length:48}, (_, i) => {
+    const p = clockPos(Math.floor(i/2));
+    return norm(Math.sin(t*Math.PI*1.6 + p.x*Math.PI*2 + p.y*Math.PI)*90 + (i%2)*180);
+  }),
+
+  // 9 — Vortex
+  t => Array.from({length:48}, (_, i) => {
+    const p = clockPos(Math.floor(i/2));
+    const dist = Math.sqrt((p.x-0.5)**2 + (p.y-0.5)**2);
+    return norm(Math.atan2(p.y-0.5, p.x-0.5)*180/Math.PI + dist*180 + t*450 + (i%2)*180);
+  }),
+
+  // 10 — Breathing
+  t => Array.from({length:48}, (_, i) => {
+    const p = clockPos(Math.floor(i/2));
+    const dist = Math.sqrt((p.x-0.5)**2 + (p.y-0.5)**2);
+    return norm(Math.sin(t*Math.PI*1.6 - dist*3)*90 + t*200 + (i%2)*180 + 90);
+  }),
+];
+
+// ─── State ───────────────────────────────────────────────────
+let mode = "active";
+let choreoIdx = 0;
+let lastMinute = new Date().getMinutes();
+let minuteStart = Date.now() - new Date().getSeconds() * 1000;
+let angles = timeAngles();
+let clockSize = 64;
+
+// Snapshot-based transitions: freeze start & end so path can't flip
+let trans = { snapshot: null, deltas: null, phase: null };
+
+// ─── Timing ──────────────────────────────────────────────────
+// 0–20s:  Show time
+// 20–25s: Blend time → choreography
+// 25–55s: Pure choreography
+// 55–60s: Blend choreography → time
+// 0–20s:  Show time
+// 20–30s: Blend time → choreography
+// 30–50s: Pure choreography
+// 50–60s: Blend choreography → time
+const TIME_HOLD_END = 20;
+const BLEND_IN_END = 30;
+const BLEND_OUT_START = 50;
+const CHOREO_DUR_MS = 50000;
+
+function choreoAt(idx, ms) {
+  return choreographies[idx]((ms % CHOREO_DUR_MS) / CHOREO_DUR_MS);
+}
+
+// Compute signed shortest delta (locked, won't flip)
+function signedDelta(from, to) {
+  from = norm(from); to = norm(to);
+  let d = to - from;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  return d;
+}
+
+// Take a snapshot: freeze current angles and compute deltas to target
+function takeSnapshot(currentAngles, targetAngles) {
+  trans.snapshot = currentAngles.slice();
+  trans.deltas = currentAngles.map((a, i) => signedDelta(a, targetAngles[i]));
+}
+
+// Apply snapshot interpolation (linear — constant speed)
+function applySnapshot(t) {
+  return trans.snapshot.map((a, i) => norm(a + trans.deltas[i] * t));
+}
+
+// ─── DOM Setup ───────────────────────────────────────────────
+const grid = document.getElementById('clock-grid');
+const canvases = [];
+
+function buildGrid() {
+  grid.innerHTML = '';
+  canvases.length = 0;
+  const gap = Math.max(2, clockSize * 0.08);
+  const digitGap = Math.max(6, clockSize * 0.25);
+  const colonGap = Math.max(10, clockSize * 0.5);
+  grid.style.setProperty('--cs', clockSize + 'px');
+
+  for (let di = 0; di < 4; di++) {
+    const group = document.createElement('div');
+    group.className = 'digit-group';
+    group.style.gap = gap + 'px';
+    if (di === 0) group.style.marginLeft = '0';
+    else if (di === 2) group.style.marginLeft = colonGap + 'px';
+    else group.style.marginLeft = digitGap + 'px';
+
+    for (let ci = 0; ci < 6; ci++) {
+      const dpr = window.devicePixelRatio || 1;
+      const cvs = document.createElement('canvas');
+      cvs.width = clockSize * dpr;
+      cvs.height = clockSize * dpr;
+      cvs.style.width = clockSize + 'px';
+      cvs.style.height = clockSize + 'px';
+      cvs.className = 'mini-clock';
+      group.appendChild(cvs);
+      canvases.push(cvs);
+    }
+    grid.appendChild(group);
+  }
+}
+
+function drawClock(canvas, hand1Deg, hand2Deg, colors) {
+  const dpr = window.devicePixelRatio || 1;
+  const size = clockSize * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+
+  const r = size / 2;
+  const len = r * 0.78;
+  const w = Math.max(1.5 * dpr, size * 0.035);
+
+  // Circle outline
+  ctx.beginPath();
+  ctx.arc(r, r, r - 0.5 * dpr, 0, Math.PI * 2);
+  ctx.strokeStyle = colors.ring;
+  ctx.lineWidth = 0.5 * dpr;
+  ctx.stroke();
+
+  // Hands
+  const toRad = d => d * Math.PI / 180;
+  for (const deg of [hand1Deg, hand2Deg]) {
+    const rad = toRad(deg);
+    const hx = r + len * Math.sin(rad);
+    const hy = r - len * Math.cos(rad);
+    ctx.beginPath();
+    ctx.moveTo(r, r);
+    ctx.lineTo(hx, hy);
+    ctx.strokeStyle = colors.hand;
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(r, r, Math.max(1.5 * dpr, size * 0.04), 0, Math.PI * 2);
+  ctx.fillStyle = colors.dot;
+  ctx.fill();
+}
+
+// ─── Choreography Buttons ────────────────────────────────────
+const choreoContainer = document.getElementById('choreo-buttons');
+
+function buildChoreoButtons() {
+  choreoContainer.innerHTML = '';
+  if (mode === 'quiet') { choreoContainer.style.display = 'none'; return; }
+  choreoContainer.style.display = 'flex';
+  const count = mode === 'medium' ? 5 : 10;
+  for (let i = 0; i < count; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = (i+1) + '. ' + CHOREO_NAMES[i];
+    btn.dataset.idx = i;
+    btn.addEventListener('click', () => {
+      choreoIdx = parseInt(btn.dataset.idx);
+      minuteStart = Date.now();
+      if (mode === 'quiet') { mode = 'active'; updateModeUI(); }
+    });
+    choreoContainer.appendChild(btn);
+  }
+}
+
+function updateChoreoButtonHighlight(currentPhase) {
+  const isShowingChoreo = currentPhase === 'choreography' || currentPhase === 'trans_to_choreo';
+  choreoContainer.querySelectorAll('button').forEach((btn, i) => {
+    btn.classList.toggle('active', isShowingChoreo && choreoIdx === i);
+  });
+}
+
+// ─── Mode Buttons ────────────────────────────────────────────
+document.querySelectorAll('#mode-selector button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    mode = btn.dataset.mode;
+    updateModeUI();
+    buildChoreoButtons();
+  });
+});
+
+function updateModeUI() {
+  document.querySelectorAll('#mode-selector button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  document.getElementById('progress-wrap').style.display = mode === 'quiet' ? 'none' : 'block';
+  document.getElementById('mode-label').textContent = 'Mode: ' + mode;
+}
+
+// ─── Resize ──────────────────────────────────────────────────
+function resize() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const maxW = (vw - 120) / 8.8;
+  const maxH = (vh - 200) / 3.3;
+  const newSize = Math.max(28, Math.min(80, Math.floor(Math.min(maxW, maxH))));
+  if (newSize !== clockSize) {
+    clockSize = newSize;
+    buildGrid();
+  }
+}
+window.addEventListener('resize', resize);
+
+// ─── Phase Computation ───────────────────────────────────────
+function getPhaseAngles(sec, mElapsed) {
+  if (mode === 'quiet') {
+    if (sec >= BLEND_OUT_START) {
+      if (trans.phase !== 'trans_to_time') { takeSnapshot(angles, upcomingTimeAngles()); trans.phase = 'trans_to_time'; }
+      return { next: applySnapshot((sec - BLEND_OUT_START) / (60 - BLEND_OUT_START)), phase: 'trans_to_time' };
+    }
+    trans.phase = null;
+    return { next: timeAngles(), phase: 'time' };
+  }
+  if (sec < TIME_HOLD_END) {
+    trans.phase = null;
+    return { next: timeAngles(), phase: 'time' };
+  }
+  if (sec < BLEND_IN_END) {
+    if (trans.phase !== 'trans_to_choreo') { takeSnapshot(angles, choreoAt(choreoIdx, mElapsed + (BLEND_IN_END - sec) * 1000)); trans.phase = 'trans_to_choreo'; }
+    return { next: applySnapshot((sec - TIME_HOLD_END) / (BLEND_IN_END - TIME_HOLD_END)), phase: 'trans_to_choreo' };
+  }
+  if (sec < BLEND_OUT_START) {
+    trans.phase = null;
+    return { next: choreoAt(choreoIdx, mElapsed), phase: 'choreography' };
+  }
+  if (trans.phase !== 'trans_to_time') { takeSnapshot(angles, upcomingTimeAngles()); trans.phase = 'trans_to_time'; }
+  return { next: applySnapshot((sec - BLEND_OUT_START) / (60 - BLEND_OUT_START)), phase: 'trans_to_time' };
+}
+
+// ─── Animation Loop ──────────────────────────────────────────
+function animate() {
+  const now = Date.now();
+  const dateNow = new Date();
+  const sec = dateNow.getSeconds() + dateNow.getMilliseconds() / 1000;
+  const curMin = dateNow.getMinutes();
+
+  if (curMin !== lastMinute) {
+    lastMinute = curMin;
+    if (mode !== 'quiet') choreoIdx = (choreoIdx + 1) % (mode === 'medium' ? 5 : 10);
+    minuteStart = now;
+    trans.phase = null;
+  }
+
+  const { next, phase } = getPhaseAngles(sec, now - minuteStart);
+  angles = next;
+
+  const cs = getComputedStyle(document.body);
+  const colors = {
+    ring: cs.getPropertyValue('--ring').trim(),
+    hand: cs.getPropertyValue('--hand').trim(),
+    dot: cs.getPropertyValue('--dot').trim(),
+  };
+
+  for (let i = 0; i < 24; i++) drawClock(canvases[i], angles[i*2], angles[i*2+1], colors);
+
+  const hh = String(dateNow.getHours()).padStart(2, '0');
+  const mm = String(dateNow.getMinutes()).padStart(2, '0');
+  const ss = String(dateNow.getSeconds()).padStart(2, '0');
+  document.getElementById('time-str').textContent = `${hh}:${mm}:${ss}`;
+
+  let label;
+  if (phase === 'time') label = 'Showing Time';
+  else if (phase === 'trans_to_time') label = mode === 'quiet' ? 'Transitioning' : CHOREO_NAMES[choreoIdx] + ' → Time';
+  else if (phase === 'trans_to_choreo') label = 'Time → ' + CHOREO_NAMES[choreoIdx];
+  else label = CHOREO_NAMES[choreoIdx];
+  document.getElementById('phase-label').textContent = label;
+  document.getElementById('mode-label').textContent = 'Mode: ' + mode;
+
+  document.getElementById('progress-cursor').style.left = (sec / 60 * 100) + '%';
+  updateChoreoButtonHighlight(phase);
+
+  requestAnimationFrame(animate);
+}
+
+// ─── Theme Toggle ────────────────────────────────────────────
+let isDark = true;
+const themeBtn = document.getElementById('theme-toggle');
+themeBtn.addEventListener('click', () => {
+  isDark = !isDark;
+  document.body.classList.toggle('light', !isDark);
+  themeBtn.textContent = isDark ? 'Light' : 'Dark';
+});
+
+// ─── Init ────────────────────────────────────────────────────
+resize();
+buildChoreoButtons();
+updateModeUI();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
