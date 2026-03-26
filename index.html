@@ -154,7 +154,7 @@
     color: var(--text-active);
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 768px) {
     #title-left { font-size: 9px; letter-spacing: 2px; left: 14px; }
     #title-right { font-size: 8px; right: 14px; }
     #theme-toggle { top: 40px; left: auto; right: 14px; transform: none; padding: 4px 10px; font-size: 9px; }
@@ -539,10 +539,9 @@ function updateModeUI() {
 function resize() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const isMobile = vw < 500;
-  const maxW = (vw - (isMobile ? 40 : 120)) / 8.8;
-  const maxH = (vh - (isMobile ? 260 : 200)) / 3.3;
-  const newSize = Math.max(24, Math.min(80, Math.floor(Math.min(maxW, maxH))));
+  const maxW = (vw - 120) / 8.8;
+  const maxH = (vh - 200) / 3.3;
+  const newSize = Math.max(28, Math.min(80, Math.floor(Math.min(maxW, maxH))));
   if (newSize !== clockSize) {
     clockSize = newSize;
     buildGrid();
