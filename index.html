@@ -157,8 +157,8 @@
   @media (max-width: 480px) {
     #title-left { font-size: 9px; letter-spacing: 2px; left: 14px; }
     #title-right { font-size: 8px; right: 14px; }
-    #theme-toggle { right: 14px; padding: 4px 10px; font-size: 9px; }
-    #status-line { font-size: 9px; letter-spacing: 1.5px; gap: 10px; }
+    #theme-toggle { top: 40px; left: auto; right: 14px; transform: none; padding: 4px 10px; font-size: 9px; }
+    #status-line { font-size: 9px; letter-spacing: 1.5px; gap: 10px; margin-top: 16px; }
     #mode-selector button { padding: 5px 10px; font-size: 10px; }
     #choreo-buttons button { padding: 4px 8px; font-size: 9px; }
     #progress-labels { font-size: 7px; }
@@ -166,7 +166,8 @@
   }
 
   #theme-toggle {
-    position: absolute; top: 40px; right: 24px;
+    position: absolute; top: 18px; left: 50%;
+    transform: translateX(-50%);
     background: var(--ui-bg); border: 1px solid var(--ui-border);
     color: var(--text-dim); padding: 5px 14px; border-radius: 6px;
     font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
